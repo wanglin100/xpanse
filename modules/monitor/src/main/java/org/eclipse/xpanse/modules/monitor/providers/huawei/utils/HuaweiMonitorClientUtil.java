@@ -15,7 +15,7 @@ import com.huaweicloud.sdk.core.auth.ICredential;
 import org.springframework.stereotype.Component;
 
 /**
- * HuaweiCloudMonitor Utils.
+ * HuaweiCloudMonitor Client Util.
  */
 @Component
 public class HuaweiMonitorClientUtil {

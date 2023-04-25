@@ -22,8 +22,8 @@ import org.eclipse.xpanse.modules.models.enums.Csp;
 import org.eclipse.xpanse.modules.models.enums.DeployResourceKind;
 import org.eclipse.xpanse.modules.models.enums.DeployVariableKind;
 import org.eclipse.xpanse.modules.models.resource.DeployVariable;
-import org.eclipse.xpanse.modules.monitor.providers.huawei.models.HuaweiMonitorResponse;
 import org.eclipse.xpanse.modules.monitor.Monitor;
+import org.eclipse.xpanse.modules.monitor.model.MonitorMetricResponse;
 import org.eclipse.xpanse.modules.monitor.providers.huawei.common.HuaweiMonitorConstant;
 import org.eclipse.xpanse.modules.monitor.providers.huawei.utils.HuaweiMonitorClientUtil;
 import org.eclipse.xpanse.modules.monitor.providers.huawei.utils.HuaweiMonitorHttpConvert;
@@ -39,6 +39,8 @@ public class HuaweiMonitor implements Monitor {
 
     private final HuaweiMonitorClientUtil client;
 
+    private boolean agentEnabled = false;
+
     @Autowired
     public HuaweiMonitor(
             HuaweiMonitorClientUtil client) {
@@ -48,29 +50,27 @@ public class HuaweiMonitor implements Monitor {
     /**
      * Get CSP.
      *
-     * @param deployServiceEntity DeployServiceEntity.
      * @return
      */
     @Override
-    public Csp getCsp(DeployServiceEntity deployServiceEntity) {
-        return deployServiceEntity.getCsp();
+    public Csp getCsp() {
+        return Csp.HUAWEI;
     }
+
 
     /**
      * @param serviceEntity the resource of the deployment.
-     * @param agentEnabled  the agent state.
      * @param fromTime      the start time of the monitor.
      * @param toTime        the end time of the monitor.
-     * @param resourceType  the type of the monitor resource.
+     * @param monitorType   the type of the monitor resource.
      * @return
      */
     @Override
-    public List<HuaweiMonitorResponse> getUsage(DeployServiceEntity serviceEntity,
-            Boolean agentEnabled, String fromTime, String toTime, String resourceType) {
-
-        List<HuaweiMonitorResponse> huaweiMonitorResponseList = new ArrayList<>();
+    public List<MonitorMetricResponse> getUsage(DeployServiceEntity serviceEntity,
+            Long fromTime, Long toTime, String monitorType) {
+        List<MonitorMetricResponse> monitorMetricResponseList = new ArrayList<>();
         if (Objects.isNull(serviceEntity)) {
-            return huaweiMonitorResponseList;
+            return monitorMetricResponseList;
         }
 
         Map<String, String> variable = getVariable(serviceEntity);
@@ -84,14 +84,16 @@ public class HuaweiMonitor implements Monitor {
             if (resourceEntity.getKind().equals(DeployResourceKind.VM)) {
                 ShowMetricDataRequest request =
                         HuaweiMonitorHttpConvert.convertRequest(resourceEntity, agentEnabled,
-                                resourceType, fromTime, toTime);
+                                monitorType, fromTime, toTime);
                 ShowMetricDataResponse response = client.showMetricData(cesClient, request);
-                HuaweiMonitorResponse huaweiMonitorResponse = HuaweiMonitorHttpConvert.convertResponse(
-                        response, resourceEntity.getResourceId());
-                huaweiMonitorResponseList.add(huaweiMonitorResponse);
+                MonitorMetricResponse monitorMetricResponse =
+                        HuaweiMonitorHttpConvert.convertResponse(
+                                response, resourceEntity.getResourceId(), resourceEntity.getName(),
+                                monitorType);
+                monitorMetricResponseList.add(monitorMetricResponse);
             }
         }
-        return huaweiMonitorResponseList;
+        return monitorMetricResponseList;
     }
 
     private Map<String, String> getVariable(DeployServiceEntity deployServiceEntity) {

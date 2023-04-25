@@ -33,6 +33,10 @@ import org.eclipse.xpanse.modules.models.service.DeployResult;
 import org.eclipse.xpanse.modules.models.utils.DeployVariableValidator;
 import org.eclipse.xpanse.modules.models.view.ServiceDetailVo;
 import org.eclipse.xpanse.modules.models.view.ServiceVo;
+import org.eclipse.xpanse.modules.monitor.Monitor;
+import org.eclipse.xpanse.modules.monitor.model.MonitorMetricResponse;
+import org.eclipse.xpanse.modules.monitor.model.MonitorRequestParams;
+import org.eclipse.xpanse.modules.monitor.providers.huawei.utils.DateUtils;
 import org.eclipse.xpanse.orchestrator.register.RegisterServiceStorage;
 import org.eclipse.xpanse.orchestrator.service.DeployResourceStorage;
 import org.eclipse.xpanse.orchestrator.service.DeployServiceStorage;
@@ -58,6 +62,8 @@ public class OrchestratorService {
     private final Map<Csp, OrchestratorPlugin> pluginMap = new ConcurrentHashMap<>();
 
     private final Map<DeployerKind, Deployment> deploymentMap = new ConcurrentHashMap<>();
+
+    private final Map<Csp, Monitor> monitorMap = new ConcurrentHashMap<>();
 
     @Resource
     private ApplicationContext applicationContext;
@@ -92,6 +98,18 @@ public class OrchestratorService {
         applicationContext.getBeansOfType(Deployment.class)
                 .forEach((key, value) -> deploymentMap.put(value.getDeployerKind(), value));
         return deploymentMap;
+    }
+
+    /**
+     * Get all Monitor group by Csp.
+     *
+     * @return
+     */
+    @Bean
+    public Map<Csp, Monitor> monitorMap() {
+        applicationContext.getBeansOfType(Monitor.class)
+                .forEach((key, value) -> monitorMap.put(value.getCsp(), value));
+        return monitorMap;
     }
 
     /**
@@ -329,4 +347,15 @@ public class OrchestratorService {
         return deployment;
     }
 
+    public List<MonitorMetricResponse> getMonitorMetric(MonitorRequestParams monitorRequestParams) {
+        DeployServiceEntity serviceEntity =
+                deployServiceStorage.findDeployServiceById(monitorRequestParams.getId());
+        Monitor monitor = monitorMap.get(serviceEntity.getCsp());
+        Long fromTime = DateUtils.getCurrentHourBefore12Hour().getTime();
+        Long toTime = DateUtils.getCurrentHour().getTime();
+        List<MonitorMetricResponse> usage = monitor.getUsage(serviceEntity, fromTime,
+                toTime, monitorRequestParams.getMonitorType());
+        return usage;
+
+    }
 }

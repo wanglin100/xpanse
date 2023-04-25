@@ -66,5 +66,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
+      <dependency>
+        <groupId>org.eclipse.xpanse.modules</groupId>
+        <artifactId>monitor</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <scope>compile</scope>
+      </dependency>
     </dependencies>
 </project>
